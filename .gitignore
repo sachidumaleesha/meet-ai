@@ -17,11 +17,18 @@
 /.next/
 /out/
 
+# production
+/build
+
 # bun
 /bun.lock
 
-# production
-/build
+# npm
+package-lock.json
+
+# prisma
+/src/generated/prisma
+/prisma/migrations
 
 # misc
 .DS_Store
@@ -42,3 +49,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
