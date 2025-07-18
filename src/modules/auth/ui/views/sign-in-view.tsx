@@ -4,10 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+import { authClient } from "@/lib/auth-client";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-
-import { authClient } from "@/lib/auth-client";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -36,10 +36,12 @@ import {
 import { FaGithub, FaGoogle } from "react-icons/fa";
 import { Loader, OctagonAlertIcon } from "lucide-react";
 
-export function SignInView() {
+export const SignInView = () => {
   const router = useRouter();
   const [error, setError] = useState<String | null>(null);
-  const [isPending, setIsPending] = useState(false);
+  const [isEmailPending, setIsEmailPending] = useState(false);
+  const [isGooglePending, setIsGooglePending] = useState(false);
+  const [isGithubPending, setIsGithubPending] = useState(false);
 
   const form = useForm<SignInFormData>({
     resolver: zodResolver(signInSchema),
@@ -50,22 +52,65 @@ export function SignInView() {
   });
 
   const onSubmit = (data: SignInFormData) => {
-    setIsPending(true);
+    setIsEmailPending(true);
     setError(null);
 
     authClient.signIn.email(
       {
         email: data.email,
         password: data.password,
+        callbackURL: "/",
       },
       {
         onSuccess: () => {
+          setIsEmailPending(false);
           router.push("/");
-          setIsPending(false);
         },
         onError: (ctx) => {
           setError(ctx.error.message);
-          setIsPending(false);
+          setIsEmailPending(false);
+        },
+      }
+    );
+  };
+
+  const onGoogle = () => {
+    setIsGooglePending(true);
+    setError(null);
+
+    authClient.signIn.social(
+      {
+        provider: "google",
+        callbackURL: "/",
+      },
+      {
+        onSuccess: () => {
+          setIsGooglePending(false);
+        },
+        onError: (ctx) => {
+          setError(ctx.error.message);
+          setIsGooglePending(false);
+        },
+      }
+    );
+  };
+
+  const onGithub = () => {
+    setIsGithubPending(true);
+    setError(null);
+
+    authClient.signIn.social(
+      {
+        provider: "github",
+        callbackURL: "/",
+      },
+      {
+        onSuccess: () => {
+          setIsGithubPending(false);
+        },
+        onError: (ctx) => {
+          setError(ctx.error.message);
+          setIsGithubPending(false);
         },
       }
     );
@@ -85,17 +130,39 @@ export function SignInView() {
                 variant="outline"
                 type="button"
                 className="w-full bg-transparent"
+                onClick={() => {
+                  onGoogle();
+                }}
+                disabled={isGooglePending}
               >
-                <FaGoogle />
-                Google
+                {isGooglePending ? (
+                  <span className="flex items-center">
+                    <Loader className="mr-2 h-4 w-4 animate-spin" /> Google
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <FaGoogle /> Google
+                  </span>
+                )}
               </Button>
               <Button
                 variant="outline"
                 type="button"
                 className="w-full bg-transparent"
+                onClick={() => {
+                  onGithub();
+                }}
+                disabled={isGithubPending}
               >
-                <FaGithub />
-                Github
+                {isGithubPending ? (
+                  <span className="flex items-center">
+                    <Loader className="mr-2 h-4 w-4 animate-spin" /> Github
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <FaGithub /> Github
+                  </span>
+                )}
               </Button>
             </div>
 
@@ -159,8 +226,12 @@ export function SignInView() {
                 </Alert>
               )}
 
-              <Button type="submit" className="w-full" disabled={isPending}>
-                {isPending ? (
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isEmailPending}
+              >
+                {isEmailPending ? (
                   <span className="flex items-center">
                     <Loader className="mr-2 h-4 w-4 animate-spin" /> Signing in
                   </span>
@@ -187,4 +258,4 @@ export function SignInView() {
       </CardContent>
     </Card>
   );
-}
+};
