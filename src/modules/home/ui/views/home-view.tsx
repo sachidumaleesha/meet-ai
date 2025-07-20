@@ -12,7 +12,7 @@ export const HomeView = () => {
   }
 
   return (
-    <div className="from-green-50 to-green-500 w-full min-h-screen bg-radial">
+    <div className="">
       Logged as: {session?.user.name}
       <br />
       <Button
