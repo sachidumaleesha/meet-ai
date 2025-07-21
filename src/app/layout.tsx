@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./styles/globals.css";
 
-import { TRPCReactProvider } from "./trpc/client";
+import { Toaster } from "@/components/ui/sonner";
+import { TRPCReactProvider } from "../trpc/client";
+
 
 const inter = Inter({
   subsets: ["latin"],
@@ -21,7 +23,10 @@ const RootLayout = ({
   return (
     <TRPCReactProvider>
       <html lang="en" suppressHydrationWarning>
-        <body className={`${inter.className} antialiased`}>{children}</body>
+        <body className={`${inter.className} antialiased`}>
+          {children}
+          <Toaster />
+        </body>
       </html>
     </TRPCReactProvider>
   );
