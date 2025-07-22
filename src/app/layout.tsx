@@ -3,8 +3,9 @@ import { Inter } from "next/font/google";
 import "./styles/globals.css";
 
 import { Toaster } from "@/components/ui/sonner";
-import { TRPCReactProvider } from "../trpc/client";
+import { TRPCReactProvider } from "@/trpc/client";
 
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -21,14 +22,16 @@ const RootLayout = ({
   children: React.ReactNode;
 }>) => {
   return (
-    <TRPCReactProvider>
-      <html lang="en" suppressHydrationWarning>
-        <body className={`${inter.className} antialiased`}>
-          {children}
-          <Toaster />
-        </body>
-      </html>
-    </TRPCReactProvider>
+    <NuqsAdapter>
+      <TRPCReactProvider>
+        <html lang="en" suppressHydrationWarning>
+          <body className={`${inter.className} antialiased`}>
+            {children}
+            <Toaster />
+          </body>
+        </html>
+      </TRPCReactProvider>
+    </NuqsAdapter>
   );
 };
 
