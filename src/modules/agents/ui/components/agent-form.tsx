@@ -40,9 +40,9 @@ export const AgentForm = ({
   const createAgent = useMutation(
     trpc.agents.create.mutationOptions({
       onSuccess: async () => {
-        await queryClinet.invalidateQueries({
-          queryKey: trpc.agents.getMany.queryKey(),
-        });
+        await queryClinet.invalidateQueries(
+          trpc.agents.getMany.queryOptions({})
+        );
 
         if (initialValues?.id) {
           await queryClinet.invalidateQueries(
