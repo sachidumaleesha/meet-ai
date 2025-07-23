@@ -8,6 +8,7 @@ import {
   MAX_PAGE_SIZE,
   MIN_PAGE_SIZE,
 } from "@/constants";
+import { meetingsInsertSchema, meetingsUpdateSchema } from "../schemas";
 
 export const meetingsRouter = createTRPCRouter({
   getOne: protectedProcedure
@@ -80,6 +81,64 @@ export const meetingsRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to fetch meetings",
+          cause: error,
+        });
+      }
+    }),
+  create: protectedProcedure
+    .input(meetingsInsertSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { name, agentId } = input;
+      const { auth } = ctx;
+      try {
+        const data = await prisma.meeting.create({
+          data: {
+            name,
+            agentId,
+            userId: auth.user.id,
+          },
+        });
+        // TODO: update stream call, upsert stream users
+        return data;
+      } catch (error) {
+        console.error("Error creating meeting:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create meeting",
+          cause: error,
+        });
+      }
+    }),
+  update: protectedProcedure
+    .input(meetingsUpdateSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { id, name, agentId } = input;
+      const { auth } = ctx;
+      try {
+        const data = await prisma.meeting.update({
+          where: {
+            id,
+            userId: auth.user.id,
+          },
+          data: {
+            name,
+            agentId,
+          },
+        });
+
+        if (!data) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Meeting not found",
+          });
+        }
+
+        return data;
+      } catch (error) {
+        console.error("Error updating meeting:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to update meeting",
           cause: error,
         });
       }

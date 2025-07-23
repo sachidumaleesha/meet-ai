@@ -20,8 +20,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-import { AgentGetOne } from "../../types";
 import { Loader } from "lucide-react";
+import { AgentGetOne } from "../../types";
 
 interface AgentFormProps {
   onSuccess?: () => void;

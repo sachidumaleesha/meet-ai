@@ -10,18 +10,24 @@ import {
   MeetingsViewLoading,
 } from "@/modules/meetings/ui/views/meetings-view";
 
+
+import { MeetingListHeader } from "@/modules/meetings/ui/components/meetings-list-header";
+
 const Page = async () => {
   const queryClient = getQueryClient();
   await queryClient.prefetchQuery(trpc.meetings.getMany.queryOptions({}));
 
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <Suspense fallback={<MeetingsViewLoading />}>
-        <ErrorBoundary fallback={<MeetingsViewError />}>
-          <MeetingsView />
-        </ErrorBoundary>
-      </Suspense>
-    </HydrationBoundary>
+    <>
+      <MeetingListHeader />
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <Suspense fallback={<MeetingsViewLoading />}>
+          <ErrorBoundary fallback={<MeetingsViewError />}>
+            <MeetingsView />
+          </ErrorBoundary>
+        </Suspense>
+      </HydrationBoundary>
+    </>
   );
 };
 

@@ -108,40 +108,6 @@ export const agentsRouter = createTRPCRouter({
         });
       }
     }),
-  update: protectedProcedure
-    .input(agentsUpdateSchema)
-    .mutation(async ({ input, ctx }) => {
-      const { id, name, instructions } = input;
-      const { auth } = ctx;
-      try {
-        const data = await prisma.agent.update({
-          where: {
-            id,
-            userId: auth.user.id,
-          },
-          data: {
-            name,
-            instructions,
-          },
-        });
-
-        if (!data) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Agent not found",
-          });
-        }
-
-        return data;
-      } catch (error) {
-        console.error("Error updating agent:", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to update agent",
-          cause: error,
-        });
-      }
-    }),
   remove: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
