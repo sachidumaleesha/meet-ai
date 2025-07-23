@@ -36,11 +36,11 @@ const Page = async ({ searchParams }: Props) => {
     <>
       <AgentListHeader />
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <ErrorBoundary fallback={<AgentsViewError />}>
-          <Suspense fallback={<AgentsViewLoading />}>
+        <Suspense fallback={<AgentsViewLoading />}>
+          <ErrorBoundary fallback={<AgentsViewError />}>
             <AgentsView />
-          </Suspense>
-        </ErrorBoundary>
+          </ErrorBoundary>
+        </Suspense>
       </HydrationBoundary>
     </>
   );
