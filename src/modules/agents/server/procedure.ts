@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { prisma } from "@/lib/db";
-import { agentsInsertSchema } from "../schemas";
+import { agentsInsertSchema, agentsUpdateSchema } from "../schemas";
 import { TRPCError } from "@trpc/server";
 import {
   DEFAULT_PAGE,
@@ -104,6 +104,70 @@ export const agentsRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to create agent",
+          cause: error,
+        });
+      }
+    }),
+  update: protectedProcedure
+    .input(agentsUpdateSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { id, name, instructions } = input;
+      const { auth } = ctx;
+      try {
+        const data = await prisma.agent.update({
+          where: {
+            id,
+            userId: auth.user.id,
+          },
+          data: {
+            name,
+            instructions,
+          },
+        });
+
+        if (!data) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Agent not found",
+          });
+        }
+
+        return data;
+      } catch (error) {
+        console.error("Error updating agent:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to update agent",
+          cause: error,
+        });
+      }
+    }),
+  remove: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const { id } = input;
+      const { auth } = ctx;
+      try {
+        const data = await prisma.agent.delete({
+          where: {
+            id,
+            userId: auth.user.id,
+          },
+        });
+
+        if (!data) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Agent not found",
+          });
+        }
+
+        return data;
+      } catch (error) {
+        console.error("Error removing agent:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to remove agent",
           cause: error,
         });
       }
