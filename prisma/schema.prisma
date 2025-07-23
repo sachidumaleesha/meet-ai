@@ -20,6 +20,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   agents        Agent[]
+  Meeting       Meeting[]
 
   @@unique([email])
   @@map("user")
@@ -71,11 +72,37 @@ model Verification {
 }
 
 model Agent {
-  id           String   @id @default(nanoid())
+  id           String    @id @default(nanoid())
   name         String
   userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   instructions String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  Meeting      Meeting[]
+}
+
+enum MeetingStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  PROCESSING
+  CANCELLED
+}
+
+model Meeting {
+  id            String        @id @default(nanoid())
+  name          String
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agentId       String
+  agent         Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  status        MeetingStatus @default(UPCOMING)
+  startedAt     DateTime?
+  endedAt       DateTime?
+  transcriptUrl String?
+  recordingUrl  String?
+  summary       String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 }
