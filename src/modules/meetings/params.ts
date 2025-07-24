@@ -13,7 +13,9 @@ export const filtersSearchParams = {
     .withDefault(DEFAULT_PAGE)
     .withOptions({ clearOnDefault: true }),
   agentId: parseAsString.withDefault("").withOptions({ clearOnDefault: true }),
-  status: parseAsStringEnum(Object.values(MeetingStatus)),
+  status: parseAsStringEnum(Object.values(MeetingStatus).filter(
+    (v): v is MeetingStatus => typeof v === "string"
+  )),
 };
 
 export const loadSearchParams = createLoader(filtersSearchParams);

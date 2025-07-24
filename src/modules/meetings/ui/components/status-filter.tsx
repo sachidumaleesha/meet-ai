@@ -73,7 +73,11 @@ export const StatusFilter = () => {
       className="h-9"
       options={options}
       value={filters.status ?? ""}
-      onSelect={(value) => setFilters({ status: value as MeetingStatus })}
+      onSelect={(value) => {
+        if (Object.values(MeetingStatus).includes(value as MeetingStatus)) {
+          setFilters({ status: value as MeetingStatus });
+        }
+      }}
     />
   );
 };
