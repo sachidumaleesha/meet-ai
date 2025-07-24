@@ -54,28 +54,65 @@ export const meetingsRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       try {
+        /* 
+          what some thing like this
+          select agent
+          duration: sql`EXTRACT<number>(EPOCH FROM (endedAt - startedAt)).as("duration")`,
+
+          innerJoin(agents, agents.id = meetings.agentId)
+
+          how to implement that
+        */
+
         const { auth } = ctx;
         const { page, pageSize, search } = input;
         const data = await prisma.meeting.findMany({
           where: {
             userId: auth.user.id,
-            ...(search ? { name: { contains: search } } : undefined),
+            ...(search
+              ? { name: { contains: search, mode: "insensitive" } }
+              : undefined),
+          },
+          include: {
+            agent: true,
           },
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           skip: (page - 1) * pageSize,
           take: pageSize,
         });
 
+        // Calculate duration for each meeting
+        const meetingsWithDuration = data.map((meeting) => {
+          let duration = null;
+          if (meeting.endedAt && meeting.startedAt) {
+            // Calculate duration in seconds
+            duration = Math.floor(
+              (meeting.endedAt.getTime() - meeting.startedAt.getTime()) / 1000
+            );
+          }
+
+          return {
+            ...meeting,
+            duration,
+          };
+        });
+
+        // Get total count for pagination
         const total = await prisma.meeting.count({
           where: {
             userId: auth.user.id,
-            ...(search ? { name: { contains: search } } : undefined),
+            // agent: {
+            //   isNot: undefined,
+            // },
+            ...(search
+              ? { name: { contains: search, mode: "insensitive" } }
+              : undefined),
           },
         });
 
         const totalPages = Math.ceil(total / pageSize);
 
-        return { items: data, total, totalPages };
+        return { items: meetingsWithDuration, total, totalPages };
       } catch (error) {
         console.error("Error fetching meetings:", error);
         throw new TRPCError({
