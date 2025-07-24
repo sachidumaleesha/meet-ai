@@ -17,10 +17,13 @@ export const meetingsRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       const { auth } = ctx;
       try {
-        const data = await prisma.meeting.findFirst({
+        let data = await prisma.meeting.findFirst({
           where: {
             id: input.id,
             userId: auth.user.id,
+          },
+          include: {
+            agent: true,
           },
         });
 
@@ -31,7 +34,19 @@ export const meetingsRouter = createTRPCRouter({
           });
         }
 
-        return data;
+        // Calculate duration for each meeting
+        let duration = null;
+        if (data.endedAt && data.startedAt) {
+          // Calculate duration in seconds
+          duration = Math.floor(
+            (data.endedAt.getTime() - data.startedAt.getTime()) / 1000
+          );
+        }
+
+        return {
+          ...data,
+          duration,
+        };
       } catch (error) {
         console.error("Error fetching meeting:", error);
         throw new TRPCError({
@@ -54,11 +69,11 @@ export const meetingsRouter = createTRPCRouter({
         agentId: z.string().nullish(),
         status: z
           .enum([
-            MeetingStatus.UPCOMING,
-            MeetingStatus.ACTIVE,
-            MeetingStatus.COMPLETED,
-            MeetingStatus.CANCELLED,
-            MeetingStatus.PROCESSING,
+            MeetingStatus.Upcoming,
+            MeetingStatus.Active,
+            MeetingStatus.Completed,
+            MeetingStatus.Cancelled,
+            MeetingStatus.Processing,
           ])
           .nullish(),
       })
@@ -191,6 +206,36 @@ export const meetingsRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to update meeting",
+          cause: error,
+        });
+      }
+    }),
+  remove: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const { id } = input;
+      const { auth } = ctx;
+      try {
+        const data = await prisma.meeting.delete({
+          where: {
+            id,
+            userId: auth.user.id,
+          },
+        });
+
+        if (!data) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Meeting not found",
+          });
+        }
+
+        return data;
+      } catch (error) {
+        console.error("Error removing meeting:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to remove meeting",
           cause: error,
         });
       }
