@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { NewAgentDialog } from "./new-agent-dialog";
-import { useAgentsFilters } from "../../hooks/use-agents-filters";
+
 import { AgentsSearchFilter } from "./agents-search-filter";
+import { useAgentsFilters } from "../../hooks/use-agents-filters";
+
 import { DEFAULT_PAGE } from "@/constants";
 
 import { CirclePlusIcon, XCircleIcon } from "lucide-react";
@@ -33,15 +37,18 @@ export const AgentListHeader = () => {
             New Agent
           </Button>
         </div>
-        <div className="flex items-center gap-x-2">
-          <AgentsSearchFilter />
-          {isAnyFilterModified && (
-            <Button variant="outline" onClick={onClearFilters}>
-              <XCircleIcon />
-              Clear
-            </Button>
-          )}
-        </div>
+        <ScrollArea>
+          <div className="flex items-center gap-x-2">
+            <AgentsSearchFilter />
+            {isAnyFilterModified && (
+              <Button variant="outline" onClick={onClearFilters}>
+                <XCircleIcon />
+                Clear
+              </Button>
+            )}
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
       </div>
     </>
   );

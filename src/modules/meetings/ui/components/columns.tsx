@@ -29,19 +29,19 @@ function formatDuration(seconds: number) {
 }
 
 const statusIconMap = {
-  UPCOMING: ClockArrowUpIcon,
-  ACTIVE: LoaderIcon,
-  COMPLETED: CircleCheckIcon,
-  CANCELLED: CircleXIcon,
-  PROCESSING: LoaderIcon,
+  upcoming: ClockArrowUpIcon,
+  active: LoaderIcon,
+  completed: CircleCheckIcon,
+  cancelled: CircleXIcon,
+  processing: LoaderIcon,
 };
 
 const statusColorMap = {
-  UPCOMING: "bg-yellow-500/20 text-yellow-800 border-yellow-500/5",
-  ACTIVE: "bg-blue-500/20 text-blue-800 border-blue-500/5",
-  COMPLETED: "bg-emerald-500/20 text-emerald-800 border-emerald-500/5",
-  CANCELLED: "bg-rose-500/20 text-rose-800 border-rose-500/5",
-  PROCESSING: "bg-gray-300/20 text-gray-800 border-gray-500/5",
+  upcoming: "bg-yellow-500/20 text-yellow-800 border-yellow-500/5",
+  active: "bg-blue-500/20 text-blue-800 border-blue-500/5",
+  completed: "bg-emerald-500/20 text-emerald-800 border-emerald-500/5",
+  cancelled: "bg-rose-500/20 text-rose-800 border-rose-500/5",
+  processing: "bg-gray-300/20 text-gray-800 border-gray-500/5",
 };
 
 export const columns: ColumnDef<MeetingsGetMany[number]>[] = [
@@ -90,7 +90,7 @@ export const columns: ColumnDef<MeetingsGetMany[number]>[] = [
         >
           <Icon
             className={cn(
-              row.original.status === "PROCESSING" && "animate-spin"
+              row.original.status === "processing" && "animate-spin"
             )}
           />
           {row.original.status}

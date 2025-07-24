@@ -1,5 +1,4 @@
 import { ReactNode, useState } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import {
   CommandResponsiveDialog,
 } from "@/components/ui/command";
 
-import { ChevronsUpDown  } from "lucide-react";
+import { ChevronsUpDown } from "lucide-react";
 
 interface Props {
   options: Array<{
@@ -38,6 +37,11 @@ export const CommandSelect = ({
   const [open, setOpen] = useState(false);
   const selectedOption = options.find((option) => option.value === value);
 
+  const handleOpenChange = (open: boolean) => {
+    onSearch?.("");
+    setOpen(open);
+  };
+
   return (
     <>
       <Button
@@ -55,7 +59,7 @@ export const CommandSelect = ({
       </Button>
       <CommandResponsiveDialog
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={handleOpenChange}
         shouldFilter={!onSearch}
       >
         <CommandInput placeholder="Search..." onValueChange={onSearch} />

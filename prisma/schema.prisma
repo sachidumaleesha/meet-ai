@@ -83,11 +83,11 @@ model Agent {
 }
 
 enum MeetingStatus {
-  UPCOMING
-  ACTIVE
-  COMPLETED
-  PROCESSING
-  CANCELLED
+  upcoming
+  active
+  completed
+  processing
+  cancelled
 }
 
 model Meeting {
@@ -97,7 +97,7 @@ model Meeting {
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   agentId       String
   agent         Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  status        MeetingStatus @default(UPCOMING)
+  status        MeetingStatus @default(upcoming)
   startedAt     DateTime?
   endedAt       DateTime?
   transcriptUrl String?
