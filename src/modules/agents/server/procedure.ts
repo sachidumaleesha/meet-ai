@@ -59,7 +59,9 @@ export const agentsRouter = createTRPCRouter({
         const data = await prisma.agent.findMany({
           where: {
             userId: auth.user.id,
-            ...(search ? { name: { contains: search } } : undefined),
+            ...(search
+              ? { name: { contains: search, mode: "insensitive" } }
+              : undefined),
           },
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           skip: (page - 1) * pageSize,
@@ -69,7 +71,9 @@ export const agentsRouter = createTRPCRouter({
         const total = await prisma.agent.count({
           where: {
             userId: auth.user.id,
-            ...(search ? { name: { contains: search } } : undefined),
+            ...(search
+              ? { name: { contains: search, mode: "insensitive" } }
+              : undefined),
           },
         });
 
