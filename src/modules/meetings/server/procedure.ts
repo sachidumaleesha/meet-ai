@@ -9,6 +9,7 @@ import {
   MIN_PAGE_SIZE,
 } from "@/constants";
 import { meetingsInsertSchema, meetingsUpdateSchema } from "../schemas";
+import { MeetingStatus } from "../types";
 
 export const meetingsRouter = createTRPCRouter({
   getOne: protectedProcedure
@@ -50,6 +51,16 @@ export const meetingsRouter = createTRPCRouter({
           .max(MAX_PAGE_SIZE)
           .default(DEFAULT_PAGE_SIZE),
         search: z.string().nullish(),
+        agentId: z.string().nullish(),
+        status: z
+          .enum([
+            MeetingStatus.UPCOMING,
+            MeetingStatus.ACTIVE,
+            MeetingStatus.COMPLETED,
+            MeetingStatus.CANCELLED,
+            MeetingStatus.PROCESSING,
+          ])
+          .nullish(),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -65,13 +76,15 @@ export const meetingsRouter = createTRPCRouter({
         */
 
         const { auth } = ctx;
-        const { page, pageSize, search } = input;
+        const { page, pageSize, search, agentId, status } = input;
         const data = await prisma.meeting.findMany({
           where: {
             userId: auth.user.id,
             ...(search
               ? { name: { contains: search, mode: "insensitive" } }
               : undefined),
+            ...(agentId ? { agentId } : undefined),
+            ...(status ? { status } : undefined),
           },
           include: {
             agent: true,
@@ -107,6 +120,8 @@ export const meetingsRouter = createTRPCRouter({
             ...(search
               ? { name: { contains: search, mode: "insensitive" } }
               : undefined),
+            ...(agentId ? { agentId } : undefined),
+            ...(status ? { status } : undefined),
           },
         });
 
