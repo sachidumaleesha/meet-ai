@@ -8,10 +8,37 @@ import {
   MAX_PAGE_SIZE,
   MIN_PAGE_SIZE,
 } from "@/constants";
+
+import { streamVideo } from "@/lib/stream-video";
+
 import { meetingsInsertSchema, meetingsUpdateSchema } from "../schemas";
 import { MeetingStatus } from "../types";
+import { generateAvatarUri } from "@/lib/avatar";
 
 export const meetingsRouter = createTRPCRouter({
+  generateToken: protectedProcedure.mutation(async ({ ctx }) => {
+    await streamVideo.upsertUsers([
+      {
+        id: ctx.auth.user.id,
+        name: ctx.auth.user.name,
+        role: "admin",
+        image:
+          ctx.auth.user.image ??
+          generateAvatarUri({ seed: ctx.auth.user.name, variant: "initials" }),
+      },
+    ]);
+
+    const expirationTime = Math.floor(Date.now() / 1000) + 3600; // 1 hour
+    const issuedAt = Math.floor(Date.now() / 1000) - 60;
+
+    const token = streamVideo.generateUserToken({
+      user_id: ctx.auth.user.id,
+      exp: expirationTime,
+      validity_in_seconds: issuedAt,
+    });
+
+    return token;
+  }),
   getOne: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
@@ -165,7 +192,55 @@ export const meetingsRouter = createTRPCRouter({
             userId: auth.user.id,
           },
         });
+
         // TODO: update stream call, upsert stream users
+        const call = streamVideo.video.call("default", data.id);
+        await call.create({
+          data: {
+            created_by_id: auth.user.id,
+            custom: {
+              meetingId: data.id,
+              meetingName: data.name,
+            },
+            settings_override: {
+              transcription: {
+                language: "en",
+                mode: "auto-on",
+                closed_caption_mode: "auto-on",
+              },
+              recording: {
+                mode: "auto-on",
+                quality: "1080p",
+              },
+            },
+          },
+        });
+
+        const existingAgent = await prisma.agent.findFirst({
+          where: {
+            id: data.agentId,
+          },
+        });
+
+        if (!existingAgent) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Agent not found",
+          });
+        }
+
+        await streamVideo.upsertUsers([
+          {
+            id: existingAgent.id,
+            name: existingAgent.name,
+            role: "user",
+            image: generateAvatarUri({
+              seed: existingAgent.name,
+              variant: "botttsNeutral",
+            }),
+          },
+        ]);
+
         return data;
       } catch (error) {
         console.error("Error creating meeting:", error);
