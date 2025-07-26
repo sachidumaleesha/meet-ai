@@ -22,9 +22,17 @@ export const CallUI = ({ meetingName }: Props) => {
   };
 
   const handleLeave = async () => {
-    if (!call) return;
-    await call.leave();
-    setShow("ended");
+    if (!call) {
+      setShow("ended");
+      return;
+    }
+    try {
+      await call.leave();
+    } catch (error) {
+      console.error('Error leaving call:', error);
+    } finally {
+      setShow("ended");
+    }
   };
 
   return (
