@@ -13,6 +13,7 @@ export const env = createEnv({
     GITHUB_CLIENT_ID: z.string().min(1),
     GITHUB_CLIENT_SECRET: z.string().min(1),
     STREAM_VIDEO_SECRET_KEY: z.string().min(1),
+    OPENAI_API_KEY: z.string().min(1),
   },
   experimental__runtimeEnv: {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,

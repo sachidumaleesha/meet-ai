@@ -9,6 +9,11 @@ import { env } from "@/types/env";
 
 const prisma = new PrismaClient();
 export const auth = betterAuth({
+  trustedOrigins: [
+    env.NEXT_PUBLIC_APP_URL,
+    "http://localhost:3000",
+    "https://refined-dodo-golden.ngrok-free.app",
+  ],
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
@@ -25,5 +30,5 @@ export const auth = betterAuth({
       clientSecret: env.GITHUB_CLIENT_SECRET,
     },
   },
-  plugins: [nextCookies()]
+  plugins: [nextCookies()],
 });
