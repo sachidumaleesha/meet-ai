@@ -144,21 +144,28 @@ export async function POST(req: NextRequest) {
     if (!meetingId) {
       return NextResponse.json(
         { error: "Missing meetingId" },
-        { status: 4000 }
+        { status: 400 }
       );
     }
 
-    await prisma.meeting.update({
-      where: {
-        id: meetingId,
-        status: "active",
-      },
-      data: {
-        status: "completed",
-        endedAt: new Date(),
-      },
-    });
-  } else if (eventType === "call.transcription_ready") {
+    try {
+      await prisma.meeting.update({
+        where: {
+          id: meetingId,
+          status: "active",
+        },
+        data: {
+          status: "completed",
+          endedAt: new Date(),
+        },
+      });
+    } catch (error) {
+      console.error("Error updating meeting status to completed:", error);
+      return NextResponse.json(
+        { error: "Failed to update meeting status" },
+        { status: 500 }
+      );
+    }  } else if (eventType === "call.transcription_ready") {
     const event = payload as CallTranscriptionReadyEvent;
     const meetingId = event.call_cid.split(":")[1];
 

@@ -14,7 +14,7 @@ const summarizer = createAgent({
   model: openai({ model: "gpt-4o", apiKey: env.OPENAI_API_KEY }),
 });
 
-export const meetingPrecessing = inngest.createFunction(
+export const meetingProcessing = inngest.createFunction(
   { id: "meeting/precessing" },
   { event: "meeting/precessing" },
   async ({ event, step }) => {
@@ -85,10 +85,16 @@ export const meetingPrecessing = inngest.createFunction(
       }
     );
 
-    const { output } = await summarizer.run(
-      "Summarize the following transcript" +
-        JSON.stringify(transcriptionWithSpeakers)
-    );
+    const { output } = await step.run("summarize-transcript", async () => {
+      const { output } = await summarizer.run(
+        `Summarize the following transcript:\n\n${JSON.stringify(
+          transcriptionWithSpeakers,
+          null,
+          2
+        )}`
+      );
+      return { output };
+    });
 
     await step.run("save-summary", async () => {
       const summary = await prisma.meeting.update({
