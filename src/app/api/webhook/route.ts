@@ -8,6 +8,7 @@ import {
   CallSessionParticipantLeftEvent,
   CallRecordingReadyEvent,
   CallSessionStartedEvent,
+  UserUpdatedEvent,
 } from "@stream-io/video-react-sdk";
 import { streamVideo } from "@/lib/stream-video";
 import { env } from "@/types/env";
@@ -137,7 +138,10 @@ export async function POST(req: NextRequest) {
 
     const call = streamVideo.video.call("default", meetingId);
     await call.end();
-  } else if (eventType === "call.session_ended") {
+  } else if (eventType === "user.updated") {
+    const event = payload as UserUpdatedEvent;
+    console.log("User updated event handled:", event);
+  } else if (eventType === "call.ended") {
     const event = payload as CallEndedEvent;
     const meetingId = event.call.custom?.meetingId;
 
@@ -152,7 +156,6 @@ export async function POST(req: NextRequest) {
       await prisma.meeting.update({
         where: {
           id: meetingId,
-          status: "active",
         },
         data: {
           status: "completed",
