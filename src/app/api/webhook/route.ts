@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import OpenAI from "openai";
 import { prisma } from "@/lib/db";
 
+import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import {
   CallEndedEvent,
   CallTranscriptionReadyEvent,
@@ -13,6 +15,13 @@ import {
 import { streamVideo } from "@/lib/stream-video";
 import { env } from "@/types/env";
 import { inngest } from "@/inngest/client";
+import { generateAvatarUri } from "@/lib/avatar";
+import { streamChat } from "@/lib/stream-chat";
+import { MessageNewEvent } from "@stream-io/node-sdk";
+
+const openaiClient = new OpenAI({
+  apiKey: env.OPENAI_API_KEY,
+});
 
 function verifySignatureWithSDK(body: string, signature: string): boolean {
   return streamVideo.verifyWebhook(body, signature);
@@ -146,10 +155,7 @@ export async function POST(req: NextRequest) {
     const meetingId = event.call.custom?.meetingId;
 
     if (!meetingId) {
-      return NextResponse.json(
-        { error: "Missing meetingId" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing meetingId" }, { status: 400 });
     }
 
     try {
@@ -168,7 +174,8 @@ export async function POST(req: NextRequest) {
         { error: "Failed to update meeting status" },
         { status: 500 }
       );
-    }  } else if (eventType === "call.transcription_ready") {
+    }
+  } else if (eventType === "call.transcription_ready") {
     const event = payload as CallTranscriptionReadyEvent;
     const meetingId = event.call_cid.split(":")[1];
 
@@ -192,7 +199,6 @@ export async function POST(req: NextRequest) {
         transcriptUrl: updatedMeeting.transcriptUrl,
       },
     });
-
   } else if (eventType === "call.recording_ready") {
     const event = payload as CallRecordingReadyEvent;
     const meetingId = event.call_cid.split(":")[1];
@@ -211,6 +217,111 @@ export async function POST(req: NextRequest) {
     }
 
     // TODO: call inngest background
+  } else if (eventType === "message.new") {
+    const event = payload as MessageNewEvent;
+
+    const userId = event.user?.id;
+    const channelId = event.channel_id;
+    const text = event.message?.text;
+
+    if (!userId || !channelId || !text) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    const existingMeeting = await prisma.meeting.findFirst({
+      where: {
+        id: channelId,
+        status: "completed",
+      },
+    });
+
+    if (!existingMeeting) {
+      return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
+    }
+
+    const existingAgent = await prisma.agent.findFirst({
+      where: {
+        id: existingMeeting.agentId,
+      },
+    });
+
+    if (!existingAgent) {
+      return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+    }
+
+    if (userId !== existingAgent.id) {
+      const instructions = `
+            You are an AI assistant helping the user revisit a recently completed meeting.
+            Below is a summary of the meeting, generated from the transcript:
+            
+            ${existingMeeting.summary}
+            
+            The following are your original instructions from the live meeting assistant. Please continue to follow these behavioral guidelines as you assist the user:
+            
+            ${existingAgent.instructions}
+            
+            The user may ask questions about the meeting, request clarifications, or ask for follow-up actions.
+            Always base your responses on the meeting summary above.
+            
+            You also have access to the recent conversation history between you and the user. Use the context of previous messages to provide relevant, coherent, and helpful responses. If the user's question refers to something discussed earlier, make sure to take that into account and maintain continuity in the conversation.
+            
+            If the summary does not contain enough information to answer a question, politely let the user know.
+            
+            Be concise, helpful, and focus on providing accurate information from the meeting and the ongoing conversation.
+            `;
+
+      const channel = streamChat.channel(channelId);
+      await channel.watch();
+
+      const previousMessages = channel.state.messages
+        .slice(-5)
+        .filter((message) => message.text && message.text.trim() !== "")
+        .map<ChatCompletionMessageParam>((message) => ({
+          role: message.user?.id === existingAgent.id ? "assistant" : "user",
+          content: message.text || "",
+        }));
+
+      const GPTResponse = await openaiClient.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: instructions },
+          ...previousMessages,
+          { role: "user", content: text },
+        ],
+      });
+
+      const GPTResponseText = GPTResponse.choices[0].message.content;
+
+      if (!GPTResponseText) {
+        return NextResponse.json(
+          { error: "GPT response is empty" },
+          { status: 500 }
+        );
+      }
+
+      const avatarUrl = generateAvatarUri({
+        seed: existingAgent.name,
+        variant: "botttsNeutral",
+      });
+
+      streamChat.upsertUser({
+        id: existingAgent.id,
+        name: existingAgent.name,
+        image: avatarUrl,
+      });
+
+      channel.sendMessage({
+        text: GPTResponseText,
+        user: {
+          id: existingAgent.id,
+          name: existingAgent.name,
+          image: avatarUrl,
+        },
+      });
+    }
   }
 
   return NextResponse.json({ status: "ok" });
