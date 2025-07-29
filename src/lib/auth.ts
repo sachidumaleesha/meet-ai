@@ -5,6 +5,15 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 
 import { nextCookies } from "better-auth/next-js";
 
+import {
+  polar,
+  checkout,
+  portal,
+  usage,
+  webhooks,
+} from "@polar-sh/better-auth";
+import { polarClient } from "./polar";
+
 import { env } from "@/types/env";
 
 const prisma = new PrismaClient();
@@ -30,5 +39,25 @@ export const auth = betterAuth({
       clientSecret: env.GITHUB_CLIENT_SECRET,
     },
   },
-  plugins: [nextCookies()],
+  plugins: [
+    nextCookies(),
+    polar({
+      client: polarClient,
+      createCustomerOnSignUp: true,
+      use: [
+        checkout({
+          products: [
+            {
+              productId: "123-456-789", // ID of Product from Polar Dashboard
+              slug: "pro", // Custom slug for easy reference in Checkout URL, e.g. /checkout/pro
+            },
+          ],
+          successUrl: "/upgrade",
+          authenticatedUsersOnly: true,
+        }),
+        portal(),
+        usage(),
+      ],
+    }),
+  ],
 });

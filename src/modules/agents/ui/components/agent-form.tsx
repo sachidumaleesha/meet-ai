@@ -22,6 +22,7 @@ import {
 
 import { Loader } from "lucide-react";
 import { AgentGetOne } from "../../types";
+import { useRouter } from "next/navigation";
 
 interface AgentFormProps {
   onSuccess?: () => void;
@@ -35,20 +36,26 @@ export const AgentForm = ({
   initialValues,
 }: AgentFormProps) => {
   const trpc = useTRPC();
-  const queryClinet = useQueryClient();
+  const queryClient = useQueryClient();
+  const router = useRouter();
 
   const createAgent = useMutation(
     trpc.agents.create.mutationOptions({
       onSuccess: async () => {
-        await queryClinet.invalidateQueries(
+        await queryClient.invalidateQueries(
           trpc.agents.getMany.queryOptions({})
         );
-        // TODO: Invalidate free tier usage
+
+        await queryClient.invalidateQueries(
+          trpc.premium.getFreeUsage.queryOptions()
+        );
         onSuccess?.();
       },
       onError: (error) => {
         toast.error(error.message);
-        // TODO: check if error code is "Forbidden", redirect to "/upgrade"
+        if (error.data?.code === "FORBIDDEN") {
+          router.push("/upgrade");
+        }
       },
     })
   );
@@ -56,21 +63,19 @@ export const AgentForm = ({
   const updateAgent = useMutation(
     trpc.agents.update.mutationOptions({
       onSuccess: async () => {
-        await queryClinet.invalidateQueries(
+        await queryClient.invalidateQueries(
           trpc.agents.getMany.queryOptions({})
         );
 
         if (initialValues?.id) {
-          await queryClinet.invalidateQueries(
+          await queryClient.invalidateQueries(
             trpc.agents.getOne.queryOptions({ id: initialValues.id })
           );
         }
-
         onSuccess?.();
       },
       onError: (error) => {
         toast.error(error.message);
-        // TODO: check if error code is "Forbidden", redirect to "/upgrade"
       },
     })
   );
