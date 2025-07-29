@@ -16,6 +16,7 @@ export const env = createEnv({
     STREAM_VIDEO_SECRET_KEY: z.string().min(1),
     OPENAI_API_KEY: z.string().min(1),
     STREAM_CHAT_SECRET_KEY: z.string().min(1),
+    POLAR_ACCESS_TOKEN: z.string().min(1),
   },
   experimental__runtimeEnv: {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,

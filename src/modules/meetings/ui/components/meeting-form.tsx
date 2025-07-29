@@ -26,6 +26,7 @@ import { MeetingGetOne } from "../../types";
 import { NewAgentDialog } from "@/modules/agents/ui/components/new-agent-dialog";
 
 import { Loader } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface MeetingFormProps {
   onSuccess?: (id?: string) => void;
@@ -39,7 +40,8 @@ export const MeetingForm = ({
   initialValues,
 }: MeetingFormProps) => {
   const trpc = useTRPC();
-  const queryClinet = useQueryClient();
+  const queryClient = useQueryClient();
+  const router = useRouter();
 
   const [openNewAgentDialog, setOpenNewAgentDialog] = useState(false);
   const [agentSearch, setAgentSearch] = useState("");
@@ -54,15 +56,19 @@ export const MeetingForm = ({
   const createMeeting = useMutation(
     trpc.meetings.create.mutationOptions({
       onSuccess: async (data) => {
-        await queryClinet.invalidateQueries(
+        await queryClient.invalidateQueries(
           trpc.meetings.getMany.queryOptions({})
         );
-        // TODO: Invalidate free tier usage
+        await queryClient.invalidateQueries(
+          trpc.premium.getFreeUsage.queryOptions()
+        );
         onSuccess?.(data.id);
       },
       onError: (error) => {
         toast.error(error.message);
-        // TODO: check if error code is "Forbidden", redirect to "/upgrade"
+        if (error.data?.code === "FORBIDDEN") {
+          router.push("/upgrade");
+        }
       },
     })
   );
@@ -70,12 +76,12 @@ export const MeetingForm = ({
   const updateMeeting = useMutation(
     trpc.meetings.update.mutationOptions({
       onSuccess: async () => {
-        await queryClinet.invalidateQueries(
+        await queryClient.invalidateQueries(
           trpc.meetings.getMany.queryOptions({})
         );
 
         if (initialValues?.id) {
-          await queryClinet.invalidateQueries(
+          await queryClient.invalidateQueries(
             trpc.meetings.getOne.queryOptions({ id: initialValues.id })
           );
         }
@@ -84,7 +90,6 @@ export const MeetingForm = ({
       },
       onError: (error) => {
         toast.error(error.message);
-        // TODO: check if error code is "Forbidden", redirect to "/upgrade"
       },
     })
   );

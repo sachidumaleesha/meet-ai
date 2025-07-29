@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+import {
+  createTRPCRouter,
+  premiumProcedure,
+  protectedProcedure,
+} from "@/trpc/init";
 import { prisma } from "@/lib/db";
 import { agentsInsertSchema, agentsUpdateSchema } from "../schemas";
 import { TRPCError } from "@trpc/server";
@@ -89,7 +93,7 @@ export const agentsRouter = createTRPCRouter({
         });
       }
     }),
-  create: protectedProcedure
+  create: premiumProcedure("agents")
     .input(agentsInsertSchema)
     .mutation(async ({ input, ctx }) => {
       const { name, instructions } = input;
@@ -108,6 +112,37 @@ export const agentsRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to create agent",
+          cause: error,
+        });
+      }
+    }),
+  update: protectedProcedure
+    .input(agentsUpdateSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { id, ...dataToUpdate } = input;
+      const { auth } = ctx;
+      try {
+        const data = await prisma.agent.update({
+          where: {
+            id,
+            userId: auth.user.id,
+          },
+          data: dataToUpdate,
+        });
+
+        if (!data) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Agent not found",
+          });
+        }
+
+        return data;
+      } catch (error) {
+        console.error("Error updating agent:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to update agent",
           cause: error,
         });
       }

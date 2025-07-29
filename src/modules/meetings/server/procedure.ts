@@ -1,6 +1,10 @@
 import { z } from "zod";
 import JSONL from "jsonl-parse-stringify";
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+import {
+  createTRPCRouter,
+  premiumProcedure,
+  protectedProcedure,
+} from "@/trpc/init";
 import { prisma } from "@/lib/db";
 import { TRPCError } from "@trpc/server";
 import {
@@ -286,7 +290,7 @@ export const meetingsRouter = createTRPCRouter({
         });
       }
     }),
-  create: protectedProcedure
+  create: premiumProcedure("meetings")
     .input(meetingsInsertSchema)
     .mutation(async ({ input, ctx }) => {
       const { name, agentId } = input;
